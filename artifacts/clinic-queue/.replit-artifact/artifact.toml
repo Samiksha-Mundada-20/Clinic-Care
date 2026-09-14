@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Clinic Queue & Patient Care"
+description = "A patient and reception web app for booking appointments, issuing live clinic tokens, communicating doctor delays, tracking queue progress, and keeping visit prescriptions and notes in one account."
+version = "1.0.0"
+id = "artifacts/clinic-queue"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19449
+
+[services.development]
+run = "pnpm --filter @workspace/clinic-queue run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/clinic-queue", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/clinic-queue/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19449"
+BASE_PATH = "/"

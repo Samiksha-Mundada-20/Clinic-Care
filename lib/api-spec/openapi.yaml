@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: doctors
+    description: Doctor and clinic status operations
+  - name: queue
+    description: Appointment tokens and live queue operations
+  - name: patients
+    description: Patient profile and visit history operations
 paths:
   /healthz:
     get:
@@ -24,7 +30,271 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /doctors:
+    get:
+      operationId: listDoctors
+      tags: [doctors]
+      summary: List doctors
+      responses:
+        "200":
+          description: Doctors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Doctor"
+  /doctors/{doctorId}/delay:
+    patch:
+      operationId: updateDoctorDelay
+      tags: [doctors]
+      summary: Update a doctor's delay
+      parameters:
+        - $ref: "#/components/parameters/DoctorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoctorDelayInput"
+      responses:
+        "200":
+          description: Updated doctor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [queue]
+      summary: Get the live clinic dashboard
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: doctorId
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Live dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /queue:
+    get:
+      operationId: listQueue
+      tags: [queue]
+      summary: List the current queue
+      parameters:
+        - in: query
+          name: doctorId
+          schema:
+            type: integer
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Queue items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QueueItem"
+  /queue/{queueId}/status:
+    patch:
+      operationId: updateQueueStatus
+      tags: [queue]
+      summary: Update a queue item's status
+      parameters:
+        - $ref: "#/components/parameters/QueueId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueStatusInput"
+      responses:
+        "200":
+          description: Updated queue item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueItem"
+  /tokens:
+    post:
+      operationId: generateToken
+      tags: [queue]
+      summary: Generate a queue token for a patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenInput"
+      responses:
+        "201":
+          description: Created queue token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueItem"
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [queue]
+      summary: List appointments
+      parameters:
+        - in: query
+          name: patientId
+          schema:
+            type: integer
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      operationId: createAppointment
+      tags: [queue]
+      summary: Book an appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Created appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+  /patients/{patientId}:
+    get:
+      operationId: getPatient
+      tags: [patients]
+      summary: Get a patient profile
+      parameters:
+        - $ref: "#/components/parameters/PatientId"
+      responses:
+        "200":
+          description: Patient profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+    patch:
+      operationId: updatePatient
+      tags: [patients]
+      summary: Update a patient profile
+      parameters:
+        - $ref: "#/components/parameters/PatientId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatientUpdate"
+      responses:
+        "200":
+          description: Updated patient
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+  /patients/{patientId}/visits:
+    get:
+      operationId: listPatientVisits
+      tags: [patients]
+      summary: List a patient's visit records
+      parameters:
+        - $ref: "#/components/parameters/PatientId"
+      responses:
+        "200":
+          description: Visit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Visit"
+    post:
+      operationId: createPatientVisit
+      tags: [patients]
+      summary: Save a visit record
+      parameters:
+        - $ref: "#/components/parameters/PatientId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisitInput"
+      responses:
+        "201":
+          description: Saved visit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Visit"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [patients]
+      summary: Request a private medical report upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlInput"
+      responses:
+        "200":
+          description: Signed upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResult"
 components:
+  parameters:
+    DoctorId:
+      in: path
+      name: doctorId
+      required: true
+      schema:
+        type: integer
+    QueueId:
+      in: path
+      name: queueId
+      required: true
+      schema:
+        type: integer
+    PatientId:
+      in: path
+      name: patientId
+      required: true
+      schema:
+        type: integer
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +303,179 @@ components:
           type: string
       required:
         - status
+    Doctor:
+      type: object
+      required: [id, name, specialty, room, status, delayMinutes, currentToken, waitingCount, avgVisitMinutes]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        specialty: { type: string }
+        room: { type: string }
+        status: { type: string, enum: [on_time, delayed, offline] }
+        delayMinutes: { type: integer }
+        currentToken: { type: integer }
+        waitingCount: { type: integer }
+        avgVisitMinutes: { type: integer }
+    DoctorDelayInput:
+      type: object
+      required: [delayMinutes]
+      properties:
+        delayMinutes: { type: integer, minimum: 0, maximum: 240 }
+    Dashboard:
+      type: object
+      required: [date, totalAppointments, checkedIn, waitingCount, currentToken, avgVisitMinutes, delayedDoctors, nextAppointment]
+      properties:
+        date: { type: string, format: date }
+        totalAppointments: { type: integer }
+        checkedIn: { type: integer }
+        waitingCount: { type: integer }
+        currentToken: { type: integer }
+        avgVisitMinutes: { type: integer }
+        delayedDoctors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Doctor"
+        nextAppointment:
+          anyOf:
+            - $ref: "#/components/schemas/Appointment"
+            - type: "null"
+    QueueItem:
+      type: object
+      required: [id, tokenNumber, patientId, patientName, doctorId, appointmentTime, status, estimatedWaitMinutes]
+      properties:
+        id: { type: integer }
+        tokenNumber: { type: integer }
+        patientId: { type: integer }
+        patientName: { type: string }
+        doctorId: { type: integer }
+        appointmentTime: { type: string }
+        source: { type: string, enum: [online, walk_in] }
+        status: { type: string, enum: [waiting, in_room, completed, skipped] }
+        estimatedWaitMinutes: { type: integer }
+    QueueStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [waiting, in_room, completed, skipped] }
+    TokenInput:
+      type: object
+      required: [doctorId]
+      properties:
+        patientId: { type: integer }
+        doctorId: { type: integer }
+        appointmentTime: { type: string }
+        source: { type: string, enum: [online, walk_in] }
+        patientName: { type: string }
+        patientPhone: { type: string }
+    Appointment:
+      type: object
+      required: [id, patientId, doctorId, date, time, reason, status]
+      properties:
+        id: { type: integer }
+        patientId: { type: integer }
+        doctorId: { type: integer }
+        date: { type: string, format: date }
+        time: { type: string }
+        reason: { type: string }
+        status: { type: string, enum: [booked, checked_in, completed, cancelled] }
+        tokenNumber:
+          type: ["integer", "null"]
+    AppointmentInput:
+      type: object
+      required: [patientId, doctorId, date, time, reason]
+      properties:
+        patientId: { type: integer }
+        doctorId: { type: integer }
+        date: { type: string, format: date }
+        time: { type: string }
+        reason: { type: string, minLength: 2 }
+    Patient:
+      type: object
+      required: [id, name, email, phone, dateOfBirth, bloodGroup]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        dateOfBirth: { type: string, format: date }
+        bloodGroup: { type: string }
+    PatientUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        phone: { type: string }
+        dateOfBirth: { type: string, format: date }
+        bloodGroup: { type: string }
+    PrescriptionMedication:
+      type: object
+      required: [name, dosage, frequency, duration]
+      properties:
+        name: { type: string }
+        dosage: { type: string }
+        frequency: { type: string }
+        duration: { type: string }
+    Visit:
+      type: object
+      required: [id, patientId, doctorId, date, doctorName, diagnosis, notes, prescriptions, documents]
+      properties:
+        id: { type: integer }
+        patientId: { type: integer }
+        doctorId: { type: integer }
+        date: { type: string, format: date }
+        doctorName: { type: string }
+        diagnosis: { type: string }
+        notes: { type: string }
+        prescriptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrescriptionMedication"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicalDocument"
+    MedicalDocument:
+      type: object
+      required: [name, objectPath, contentType, size]
+      properties:
+        name: { type: string }
+        objectPath: { type: string }
+        contentType: { type: string }
+        size: { type: integer }
+    VisitInput:
+      type: object
+      required: [doctorId, date, diagnosis, notes, prescriptions]
+      properties:
+        doctorId: { type: integer }
+        date: { type: string, format: date }
+        diagnosis: { type: string }
+        notes: { type: string }
+        prescriptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrescriptionMedication"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/MedicalDocument"
+    RequestUploadUrlInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string }
+        size: { type: integer }
+        contentType: { type: string }
+    RequestUploadUrlResult:
+      type: object
+      required: [uploadURL, objectPath, metadata]
+      properties:
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }
+        metadata:
+          type: object
+          required: [name, size, contentType]
+          properties:
+            name: { type: string }
+            size: { type: integer }
+            contentType: { type: string }
 
